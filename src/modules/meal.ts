@@ -1,6 +1,6 @@
 import { Dispatch } from 'redux';
 
-import { SKHUS_API, DEBUG } from '../config';
+import { SKHUS_API, DEBUG } from './config';
 
 type MealUrl = {
   date: string,
@@ -108,6 +108,7 @@ export function Request() {
         }
       });
 
+      // 디버그 시 가장 최근 것으로 불러온다.
       if (nowMealUrl === undefined && !DEBUG) {
         dispatch(load({}));
         return;

@@ -1,6 +1,6 @@
 import { Dispatch } from 'redux';
 
-import { SKHUS_API } from '../config';
+import { forestAPI } from './apis';
 import { RootState } from './index';
 
 const ID_UPDATE = 'login/ID_UPDATE' as const;
@@ -21,7 +21,7 @@ type LoginResult = {
 export const idUpdate = (value: string) => ({ type: ID_UPDATE, payload: value });
 export const pwUpdate = (value: string) => ({ type: PW_UPDATE, payload: value });
 export const errorConfirm = () => ({ type: ERROR_CONFIRM });
-const loginRequest = () => ({ type: REQUEST });
+const loginRequest = (isCookie: boolean) => ({ type: REQUEST, payload: isCookie });
 const Failed = (err: string) => ({ type: FAILED, payload: err });
 const Success = (result: LoginResult) => ({ type: SUCCESS, payload: result });
 export const Logout = () => ({ type: LOGOUT });
@@ -35,21 +35,16 @@ type LoginAction =
   | ReturnType<typeof errorConfirm>
   | ReturnType<typeof Logout>;
 
-type Credential =
-  | {
-      Old: string,
-      New: string,
-      NewToken: string,
-  }
-  | {
-      Old: boolean,
-      New: boolean,
-      NewToken: boolean,
-  };
+type Credential = {
+  Old?: string | boolean,
+  New?: string,
+  NewToken?: string,
+};
 
 type LoginState = {
   id: string,
   pw: string,
+  isCookie: boolean,
   waiting: boolean,
   error: string,
   credential: Credential,
@@ -58,51 +53,46 @@ type LoginState = {
 const initialState: LoginState = {
   id: '',
   pw: '',
+  isCookie: false,
   waiting: false,
   error: '',
-  credential: {
-    Old: '',
-    New: '',
-    NewToken: '',
-  }
+  credential: { }
 }
 
-export function Request() {
-  return (dispatch: Dispatch<LoginAction>, getState: ()=>RootState) => {
-    dispatch(loginRequest());
+export function Request(isCookie: boolean = false) {
+  return async (dispatch: Dispatch<LoginAction>, getState: ()=>RootState) => {
+    // 로그인 시작 설정
+    dispatch(loginRequest(isCookie));
     const login = getState().login;
-    console.log(login);
+
+    // 로그인 조건 확인
     if (login.id === '' || login.pw === '') {
       dispatch(Failed('id 또는 password가 비워져 있습니다.'));
       return;
-    } else if (login.pw.length <= 7) {
+    } else if (login.pw.length < 8) {
       dispatch(Failed('password의 길이가 최소 8자리 이상이여야 합니다.'));
     }
     const fetchLogin = (loginType: 'credential-old' | 'credential-new') =>
-      fetch(SKHUS_API + "/user/login", {
-        method: 'POST',
-        cache: 'no-cache',
-        body: JSON.stringify({
+      forestAPI.post("/user/login",
+        JSON.stringify({
           "userid": login.id,
           "userpw": login.pw,
           "type":   loginType,
-        }),
-        credentials: 'include',
-      }).then(response => response.json())
-        .then((result: LoginResult) => {
-          if (result.error !== '') {
-            dispatch(Failed(result.error));
-            return
-          }
-
-          dispatch(Success(result));
         })
-        .catch(err => {
-          dispatch(Failed(err.toString()));
-        });
+      );
 
-    fetchLogin('credential-old');
-    fetchLogin('credential-new');
+    try {
+      let forestResult = fetchLogin('credential-old');
+      if (isCookie) {
+        dispatch(Success((await forestResult).data));
+        return;
+      }
+      let samResult = fetchLogin('credential-new');
+      dispatch(Success((await forestResult).data));
+      dispatch(Success((await samResult).data));
+    } catch (err) {
+      dispatch(Failed(err.toString()));
+    }
   };
 };
 
@@ -113,7 +103,7 @@ function login(state: LoginState = initialState, action: LoginAction) {
     case PW_UPDATE:
       return { ...state, pw: action.payload, };
     case REQUEST:
-      return { ...state, waiting: true };
+      return { ...state, isCookie: action.payload, waiting: true };
     case FAILED:
       if (state.error !== '')
         return state;
@@ -125,19 +115,22 @@ function login(state: LoginState = initialState, action: LoginAction) {
     case SUCCESS:
       var credential = state.credential;
 
-      if (action.payload['credential-old'] !== undefined) {
-        credential.Old = action.payload['credential-old'];
-      } else if (action.payload['credential-new'] !== undefined &&
-        action.payload['credential-new-token'] !== undefined) {
+      if (action.payload['credential-old']) {
+        if (state.isCookie)
+          credential.Old = true;
+        else
+          credential.Old = action.payload['credential-old'];
+      } else if (action.payload['credential-new'] &&
+        action.payload['credential-new-token']) {
         credential.New = action.payload['credential-new'];
         credential.NewToken = action.payload['credential-new-token'];
       }
 
       var keep = true;
 
-      if (credential.Old !== '' &&
-        credential.New !== '' &&
-        credential.NewToken !== '') {
+      if ((credential.Old &&
+        credential.New &&
+        credential.NewToken) || state.isCookie) {
         keep = false;
       }
 
@@ -147,11 +140,7 @@ function login(state: LoginState = initialState, action: LoginAction) {
     case LOGOUT:
       return {
         ...state,
-        credential: {
-          NewToken: '',
-          New: '',
-          Old: '',
-        },
+        credential: {},
         id: '',
         pw: '',
       };
@@ -161,9 +150,12 @@ function login(state: LoginState = initialState, action: LoginAction) {
 }
 
 export function isLogin(login: LoginState) {
-  return login.credential.New !== '' &&
-    login.credential.NewToken !== '' &&
-    login.credential.Old !== ''
+  if (login.isCookie) {
+    return login.credential.Old;
+  }
+  return login.credential.New &&
+    login.credential.NewToken &&
+    login.credential.Old
 }
 
 export default login;

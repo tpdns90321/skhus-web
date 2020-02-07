@@ -74,7 +74,7 @@ const Login: React.FC = () => {
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    dispatch(Request());
+    dispatch(Request(true));
   }
 
   return (
