@@ -18,12 +18,18 @@ type LoginResult = {
   'error': string,
 }
 
+// id update
 export const idUpdate = (value: string) => ({ type: ID_UPDATE, payload: value });
+// password update
 export const pwUpdate = (value: string) => ({ type: PW_UPDATE, payload: value });
 export const errorConfirm = () => ({ type: ERROR_CONFIRM });
+// 로그인 시작, 쿠키 모드
 const loginRequest = (isCookie: boolean) => ({ type: REQUEST, payload: isCookie });
+// 로그인 시작
 const Failed = (err: string) => ({ type: FAILED, payload: err });
+// 로그인 성공
 const Success = (result: LoginResult) => ({ type: SUCCESS, payload: result });
+// 로그아웃
 export const Logout = () => ({ type: LOGOUT });
 
 type LoginAction = 
@@ -91,6 +97,9 @@ export function Request(isCookie: boolean = false) {
       dispatch(Success((await forestResult).data));
       dispatch(Success((await samResult).data));
     } catch (err) {
+      if (err.response) {
+        dispatch(Failed(err.response.data.error));
+      }
       dispatch(Failed(err.toString()));
     }
   };

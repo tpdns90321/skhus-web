@@ -1,6 +1,7 @@
 import { Dispatch } from 'redux';
 
-import { SKHUS_API, DEBUG } from './config';
+import { forestAPI } from './apis';
+import { DEBUG } from './config';
 
 type MealUrl = {
   date: string,
@@ -35,6 +36,8 @@ export type Meal = {
   japan: string,
   dinner: string,
 };
+
+const apiOption = {withCredentials: false};
 
 const REQUEST = 'meal/REQUEST' as const;
 const LOAD = 'meal/LOAD' as const;
@@ -79,8 +82,8 @@ export function Request() {
     dispatch(request());
 
     try {
-      const urlRes = await fetch(SKHUS_API + '/life/meal/urls');
-      const urls: Array<MealUrl> = (await urlRes.json()).urls;
+      const urlRes: MealUrlRes = (await forestAPI.get('/life/meal/urls', apiOption)).data;
+      const urls: Array<MealUrl> = urlRes.urls;
       const searchDate = RegExp('(\\d+)/(\\d+)');
 
       const now = new Date();
@@ -116,14 +119,9 @@ export function Request() {
         nowMealUrl = urls[0].url;
       }
 
-      const dataRes = await fetch(SKHUS_API + '/life/meal/data', {
-        method: 'POST',
-        body: JSON.stringify({
-          url: nowMealUrl
-        }),
-      });
-
-      const mealData: Array<MealData> = (await dataRes.json()).data;
+      const mealData: Array<MealData> = (await forestAPI.post('/life/meal/data', {
+        url: nowMealUrl
+      }, apiOption)).data.data;
       let result: { [key: string]: Meal } = {};
       for (let i = 0; i < mealData.length; i++) {
         const mData = mealData[i];
