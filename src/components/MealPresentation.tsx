@@ -2,9 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
+import IconButton from '@material-ui/core/IconButton';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import Divider from '@material-ui/core/Divider';
+import RefreshIcon from '@material-ui/icons/Refresh';
 import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
 
 import { Meal } from '../modules/meal';
@@ -61,6 +63,7 @@ type MealPresentationProp = {
   single: boolean,
   waiting: boolean,
   error: string,
+  refresh?: (_:any)=>void,
 };
 
 const LoadingMessage: React.FC = () => {
@@ -83,7 +86,7 @@ const ErrorMessage: React.SFC<{ error: string }> = (prop) => {
   );
 };
 
-const Title: React.SFC<{title: string,}> = (prop) => {
+const Title: React.SFC<{title: string,refresh?: (_:any)=>void}> = (prop) => {
   const classes = useStyles();
 
   return (
@@ -92,6 +95,9 @@ const Title: React.SFC<{title: string,}> = (prop) => {
         { prop.title }
       </Typography>
       { prop.children }
+      { prop.refresh ?
+          <IconButton onClick={prop.refresh} size="small"><RefreshIcon /></IconButton> :
+          null}
     </CardContent>
   );
 };
@@ -128,7 +134,7 @@ export const MealPresentation: React.SFC<MealPresentationProp> = (prop) => {
         prop.single ? '오늘의 식단' :
         prop.meal !== undefined ?
         prop.meal.day : ''
-      }>
+      } refresh={prop.refresh}>
         { prop.single ? 
           <Button component={Link} to="/meal">일주일 학식</Button> : null }
       </Title>
@@ -150,12 +156,13 @@ export const MealPresentation: React.SFC<MealPresentationProp> = (prop) => {
   );
 };
 
-type MealFullPresentation = {
+type MealFullPresentationProp = {
   weekMeal?: { [key: string]: Meal },
   error: string,
+  refresh: (_:any)=>void,
 };
 
-export const MealFullPresentation: React.SFC<MealFullPresentation> = (prop) => {
+export const MealFullPresentation: React.SFC<MealFullPresentationProp> = (prop) => {
   const classes = useStyles();
 
   return (
@@ -165,7 +172,7 @@ export const MealFullPresentation: React.SFC<MealFullPresentation> = (prop) => {
           prop.error !== '' ?
             <ErrorMessage error={prop.error} />
           : <LoadingMessage />
-          : <Title title="이번주 식단" /> }
+          : <Title title="이번주 식단" refresh={prop.refresh} /> }
       </Card>
       { prop.weekMeal !== undefined ?
           Object.keys(prop.weekMeal).map((day: string) => (

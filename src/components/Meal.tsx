@@ -24,7 +24,9 @@ export const MealMini: React.FC = () => {
       single={true}
       waiting={meal.waiting}
       meal={targetMeal}
-      error={meal.error} />
+      error={meal.error}
+      refresh={()=>{dispatch(Request());}}
+    />
   );
 };
 
@@ -36,7 +38,11 @@ const MealFull: React.FC = () => {
     dispatch(Request());
 
   return (
-    <MealFullPresentation weekMeal={meal.meal} error={meal.error} />
+    <MealFullPresentation
+      weekMeal={meal.meal}
+      error={meal.error}
+      refresh={()=>{dispatch(Request());}}
+    />
   );
 };
 
