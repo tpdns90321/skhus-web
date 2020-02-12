@@ -23,7 +23,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   title: {
     display: 'flex',
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   titleText: {
     flexGrow: 1,
@@ -48,13 +48,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     flexDirection: 'row',
   },
-  list: {
+  mealList: {
     marginBottom: theme.spacing(1),
   },
   layout: {
     display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
   },
 }));
 
@@ -96,7 +96,7 @@ const Title: React.SFC<{title: string,refresh?: (_:any)=>void}> = (prop) => {
       </Typography>
       { prop.children }
       { prop.refresh ?
-          <IconButton onClick={prop.refresh} size="small"><RefreshIcon /></IconButton> :
+          <IconButton onClick={prop.refresh} size="medium"><RefreshIcon /></IconButton> :
           null}
     </CardContent>
   );
@@ -121,7 +121,7 @@ export const MealPresentation: React.SFC<MealPresentationProp> = (prop) => {
     <CardContent className={classes.cardContent + ' ' + classes.diet}>
       <Typography className={classes.name} variant="h5">{prop.title}</Typography>
       { prop.diet.split('\n').map((e: string) => (
-        <Typography className={classes.list} key={e}>
+        <Typography className={classes.mealList} key={e}>
           {e.replace('&amp;', '&')}
         </Typography>
       )) }
@@ -166,7 +166,7 @@ export const MealFullPresentation: React.SFC<MealFullPresentationProp> = (prop) 
   const classes = useStyles();
 
   return (
-    <div className={classes.layout}>
+    <div>
       <Card className={classes.card}>
         { prop.weekMeal === undefined ?
           prop.error !== '' ?
@@ -174,17 +174,19 @@ export const MealFullPresentation: React.SFC<MealFullPresentationProp> = (prop) 
           : <LoadingMessage />
           : <Title title="이번주 식단" refresh={prop.refresh} /> }
       </Card>
-      { prop.weekMeal !== undefined ?
-          Object.keys(prop.weekMeal).map((day: string) => (
-            <MealPresentation
-              meal={prop.weekMeal !== undefined ?
-                prop.weekMeal[day] : undefined}
-            error=""
-            waiting={false}
-            single={false} 
-            key={day} />
-        ))
-        : null }
+      <div className={classes.layout}>
+        { prop.weekMeal !== undefined ?
+            Object.keys(prop.weekMeal).map((day: string) => (
+              <MealPresentation
+                meal={prop.weekMeal !== undefined ?
+                  prop.weekMeal[day] : undefined}
+                error=""
+                waiting={false}
+                single={false} 
+                key={day} />
+          ))
+          : null }
+      </div>
     </div>
   );
 };

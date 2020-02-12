@@ -67,7 +67,7 @@ const initialState: MealState = {
 function meal(state: MealState = initialState, action: MealAction) {
   switch (action.type) {
     case REQUEST:
-      return { ...state, waiting: true };
+      return { meal: undefined, waiting: true, error: '' };
     case LOAD:
       return { ...state, waiting: false, meal: action.payload };
     case FAILED:
